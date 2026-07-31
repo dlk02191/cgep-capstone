@@ -111,8 +111,10 @@ resource "aws_dynamodb_table" "intake" {
     type = "S"
   }
 
-  # No server_side_encryption block. Defaults to AWS-owned key.
-  # GAP-02: capstone learner expected to add this with a customer-owned key.
+  server_side_encryption {
+      enabled     = true
+      kms_key_arn = aws_kms_key.phi.arn
+  }
 }
 
 ######################################################################
@@ -184,6 +186,13 @@ resource "aws_iam_role_policy" "lambda_inline" {
         Effect   = "Allow"
         Action   = "s3:PutObject"
         Resource = ["${aws_s3_bucket.uploads.arn}/*"]
+      },
+      # CMK adoption side-effects: DynamoDB needs Decrypt for its table key
+      # on data access; S3 needs GenerateDataKey for SSE-KMS uploads.
+      {
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt", "kms:GenerateDataKey"]
+        Resource = aws_kms_key.phi.arn
       }
     ]
   })
