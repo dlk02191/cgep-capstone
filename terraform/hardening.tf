@@ -11,3 +11,12 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "uploads" {
     }
   }
 }
+
+# GAP-04: Versioning on PHI uploads bucket (HIPAA 164.308(a)(7) - contingency plan)
+resource "aws_s3_bucket_versioning" "uploads" {
+  bucket = aws_s3_bucket.uploads.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
