@@ -20,3 +20,34 @@ resource "aws_s3_bucket_versioning" "uploads" {
     status = "Enabled"
   }
 }
+
+# GAP-03: Deny all non-TLS access to the PHI uploads bucket
+# HIPAA 164.312(e)(1) — Transmission Security
+data "aws_iam_policy_document" "uploads_tls_only" {
+  statement {
+    sid     = "DenyInsecureTransport"
+    effect  = "Deny"
+    actions = ["s3:*"]
+
+    resources = [
+      aws_s3_bucket.uploads.arn,
+      "${aws_s3_bucket.uploads.arn}/*",
+    ]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "uploads_tls_only" {
+  bucket = aws_s3_bucket.uploads.id
+  policy = data.aws_iam_policy_document.uploads_tls_only.json
+}
