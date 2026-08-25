@@ -2,13 +2,38 @@
 # Lab 2.5 pattern, adapted: CMK encryption per capstone brief,
 # GOVERNANCE mode (sandbox teardown), separate key from PHI CMK.
 
-# --- Dedicated evidence key (separate custody boundary from PHI) ---
+
 resource "aws_kms_key" "evidence" {
   description             = "CMK for evidence vault encryption"
   enable_key_rotation     = true
   deletion_window_in_days = 7 # sandbox value; production = 30
 
-   tags = {
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableRootAccess"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowCloudTrailEncrypt"
+        Effect    = "Allow"
+        Principal = { Service = "cloudtrail.amazonaws.com" }
+        Action    = ["kms:GenerateDataKey*", "kms:DescribeKey"]
+        Resource  = "*"
+        Condition = {
+          StringEquals = {
+            "aws:SourceArn" = "arn:aws:cloudtrail:${var.aws_region}:${data.aws_caller_identity.current.account_id}:trail/acme-health-mgmt"
+          }
+        }
+      },
+    ]
+  })
+
+  tags = {
     DataClass = "evidence"
   }
 }
