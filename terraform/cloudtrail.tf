@@ -103,3 +103,13 @@ resource "aws_cloudtrail" "mgmt" {
 
   depends_on = [aws_s3_bucket_policy.trail]
 }
+
+# GAP-04 extension: versioning on the CloudTrail log bucket (HIPAA 164.308(a)(7))
+# Caught by policies/s3_versioning.rego — Lab 5.2 pattern shipped without it.
+resource "aws_s3_bucket_versioning" "trail" {
+  bucket = aws_s3_bucket.trail.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
