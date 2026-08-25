@@ -62,6 +62,24 @@ data "aws_iam_policy_document" "trail" {
       values   = ["arn:aws:cloudtrail:${var.aws_region}:${data.aws_caller_identity.current.account_id}:trail/acme-health-mgmt"]
     }
   }
+    statement {
+    sid       = "DenyInsecureTransport"
+    effect    = "Deny"
+    actions   = ["s3:*"]
+    resources = [
+      aws_s3_bucket.trail.arn,
+      "${aws_s3_bucket.trail.arn}/*",
+    ]
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
 }
 
 resource "aws_s3_bucket_policy" "trail" {

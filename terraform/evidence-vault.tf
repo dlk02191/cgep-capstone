@@ -71,20 +71,37 @@ data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket_policy" "evidence_vault" {
   bucket = aws_s3_bucket.evidence_vault.id
-  policy = jsonencode({
+    policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid       = "DenyBucketDeletion"
-      Effect    = "Deny"
-      Principal = "*"
-      Action    = "s3:DeleteBucket"
-      Resource  = aws_s3_bucket.evidence_vault.arn
-      Condition = {
-        StringNotEquals = {
-          "aws:PrincipalArn" = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+    Statement = [
+      {
+        Sid       = "DenyBucketDeletion"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:DeleteBucket"
+        Resource  = aws_s3_bucket.evidence_vault.arn
+        Condition = {
+          StringNotEquals = {
+            "aws:PrincipalArn" = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+          }
         }
-      }
-    }]
+      },
+      {
+        Sid       = "DenyInsecureTransport"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:*"
+        Resource = [
+          aws_s3_bucket.evidence_vault.arn,
+          "${aws_s3_bucket.evidence_vault.arn}/*",
+        ]
+        Condition = {
+          Bool = {
+            "aws:SecureTransport" = "false"
+          }
+        }
+      },
+    ]
   })
 }
 
